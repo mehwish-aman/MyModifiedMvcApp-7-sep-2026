@@ -608,6 +608,14 @@ rowSaveBtn.addEventListener("click", function () {
 });
 
 
+function blockScientificNotation(inputElement) {
+    inputElement.addEventListener("keydown", function (e) {
+        if (e.key === "e" || e.key === "E" || e.key === "+" || e.key === "-") {
+            e.preventDefault();
+        }
+    });
+}
+
 
                      /*Function for Calulating Total Purchse Value*/
 function calculateTotal() {  
@@ -634,6 +642,10 @@ inputElement.addEventListener("input", function () {
 
 limitNumberInput(purchaseValueInput, 6);
 limitNumberInput(taxInput, 2);
+
+blockScientificNotation(purchaseValueInput);
+blockScientificNotation(taxInput);
+
 
 /*Jab bhi user in fields mein type kare "input" event = har keystroke pe, 
 calculateTotal function chalta hai, real-time update.*/
