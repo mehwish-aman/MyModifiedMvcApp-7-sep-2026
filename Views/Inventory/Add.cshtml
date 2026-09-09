@@ -184,7 +184,7 @@
 
 .list-header-row {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 13px;
 }
@@ -216,16 +216,31 @@
     box-shadow: none;
      margin: 0;   /* YE ADD KARO */
 }
-
-.search-icon-btn {
-    background-color: #83a5d8;
+#searchInput,
+#exportBtn {
+    height: 48px;
+    box-sizing: border-box;
+}
+#search-icon-btn {
+    background-color: white;
     border: none;
     color: white;
-    padding: 0 18px;
     font-size: 18px;
-    border-radius: 0 6px 6px 0;
+    /* border-radius: 0 6px 6px 0; */
     cursor: default;
+    height: 40px;
+    width: 40px;
+    margin-right: 10px;
 }
+
+#search-icon-btn img {
+    width: 25px;
+    height: 25px;
+    object-fit: contain;
+
+}
+
+
 .search-row{
          display: flex;
     justify-content: end;
@@ -238,7 +253,24 @@
     border-radius: 5px;
     box-sizing: border-box;
 }
+#search-icon-btn img {
+    width: 25px;   /* 18px se 24px */
+    height: 25px;
+    object-fit: contain;
+}
+
+#exportBtn img {
+    width: 25px;
+    height: 25px;
+    vertical-align: middle;
+    margin-right: 6px;
+    object-fit: contain;
+}
 .search-hidden {
+    display: none;
+}
+
+.date-hidden {
     display: none;
 }
 /*pagination stylingg*/
@@ -342,6 +374,93 @@
 .add-row-box button:hover {
     background-color: #e0e0e0;
 }
+.right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.date-filter-wrapper {
+    position: relative;
+}
+
+.date-filter-btn {
+    height: 48px;
+    padding: 12px 20px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-sizing: border-box;
+}
+
+.date-filter-dropdown {
+    position: absolute;
+    top: 55px;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    padding: 15px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 220px;
+}
+
+.date-filter-dropdown label {
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    gap: 4px;
+}
+
+.date-filter-dropdown input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.date-filter-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.date-filter-actions button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#applyDateFilter {
+    background-color: #0d5ed8;
+    color: white;
+}
+
+#clearDateFilter {
+    background-color: #f0f0f0;
+}
+#exportBtn {
+    padding: 12px 20px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+#exportBtn:hover {
+    background-color: #f0f0f0;
+}
 </style>
 <h2 class="page-title" >Inventory Dashboard</h2>
 
@@ -354,10 +473,26 @@ ke use ke liye.-->
 
 <div class="list-header-row">
     <button type="button" id="addItemBtn">+ Add Item</button>
-      <div class="search-wrapper">
+     <div class="right-controls">
+    <div class="search-wrapper">
         <input type="text" id="searchInput" placeholder="Search by item name, company..." />
-        <button type="button" class="search-icon-btn" tabindex="-1">🔍</button>
+        <button type="button" id="search-icon-btn"><img src="~/images/search.png" alt="Search" /></button>
     </div>
+    <div class="date-filter-wrapper">
+        <button type="button" id="dateFilterBtn" class="date-filter-btn">
+            🗓️<span id="dateFilterLabel">Filter</span> ▾
+        </button>
+        <div class="date-filter-dropdown" id="dateFilterDropdown" style="display:none;">
+            <label>From <input type="date" id="dateFrom" /></label>
+            <label>To <input type="date" id="dateTo" /></label>
+            <div class="date-filter-actions">
+                <button type="button" id="applyDateFilter">Apply</button>
+                <button type="button" id="clearDateFilter">Clear</button>
+            </div>
+        </div>
+    </div>
+    <button type="button" id="exportBtn"><img src="~/images/export-img.jpg" alt="Export" />Export CSV</button>
+</div>
 </div>
     <div id="messageBox"></div>
 <div class="add-row-box" id="addRowContainer" style="display:none;">
@@ -712,146 +847,14 @@ function buildRowHtml(data) {
     `;
 }
 
-@*
-               // Save/Update button click — pehle validation check
-                            /*Save Logic*/
-    /*Save click hone par form.checkValidity() check karta hai form sahi bhara hai ya nahi 
-agar sahi hai to modal khulta hai (display: flex), agar nahi to error message dikhta hai aur 
-reportValidity() browser ke apne warnings har khali field ke paas dikhata hai. No click hone par 
-modal band ho jata hai aur form reset (khali) ho jata hai.*/         
-saveBtn.addEventListener("click", function () {
-    if (form.checkValidity()) {
-    validationError.style.display = "none";
-    modal.style.display = "flex"; } 
-    else {
-    
-    validationError.innerText = "Please fill in all required fields before saving.";
-    validationError.style.display = "block";
-    form.reportValidity(); /* browser ke apne error bubbles bhi dikhayega har field ke paas*/}
-    //saveBtn.innerText = "save";
-});
-
-
-                    /* // Save/Update Modal — "No button*/
-    /*Modal band, form ke saare fields khali (form.reset() HTML ka built-in method), Total explicitly 
-    khali kiya (kyunki wo readonly hai, reset() kabhi consistent nahi hota readonly fields ke sath).*/                
-
-noBtn.addEventListener("click", function () {
-    console.log("No clicked, editingItemId before reset:", editingItemId);
-    //edit mode 
-    if (editingItemId)
-    {
-     modal.style.display = "none";
-    }
-    //add mode 
-    else{
-        modal.style.display = "none";
-        totalInput.value = "0";
-        editingItemId = null;
-        console.log("editingItemId after reset:", editingItemId);
-        form.reset(); //form clear kiya
-        saveBtn.innerText = "save";
-    }
-});
-
-                    /*// Save/Update Modal — "Yes button*/
-yesBtn.addEventListener("click", function () {
-    //debugger; 
-    console.log("Yes clicked, editingItemId is:", editingItemId);
-    //new FormData(form) form ke saare fields (name/value pairs) automatically collect karta hai
-    const formData = new FormData(form);
-    console.log("📊 FormData created:", formData); 
-    //AJEX-->fetch(form.action[], background post req bhejta hai /Inventory/Update/ pe without pg loading)
-    const url = editingItemId ? "/Inventory/Update/" + editingItemId : form.action;
-     console.log("✅ YES BUTTON CLICKED!");
-     console.log("🔗 Fetching to URL:", url); 
-
-
-    fetch(url, {method: "POST", body: formData})
-        //server sy aye responce ko(JS string mein hai) JS obj mein convrt krta hai
-        .then(response => response.json())
-              
-        //Actual data mil chuka ab ui ko update kry
-        .then(data => {
-            modal.style.display = "none";
-            messageBox.innerText = data.message; //msg box mein yeh dikhaye
-            messageBox.style.display = "block";
-           // setTimeout("", 3000); // 3000ms = 3 seconds
-              setTimeout(function () { 
-                messageBox.style.display = "none";
-             }, 3000); // 3000ms = 3 seconds
-            if (editingItemId) {
-                // Existing row ko update karo
-                const row = document.getElementById("row-" + data.id);
-                row.innerHTML = `
-                    <td class="text-left">${data.itemName}</td>
-                     <td class="text-left">${selectedCategoryName}</td>
-                    <td class="text-left">${data.description}</td>
-                    <td class="text-left">${data.company}</td>
-                    <td class="text-right">${data.purchaseValue}</td>
-                    <td class="text-center">${data.purchaseDate}</td>
-                    <td class="text-right">${data.tax}</td>
-                    <td class="text-center">${data.total}</td>
-                    <td>
-                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}" data-categoryid="${data.categoryId}">✏️</button>
-                        <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
-                    </td>
-                `;
-                attachRowEvents(row);
-            } else {
-                // Naya row add karo (jaisa pehle tha)
-                const tableBody = document.getElementById("inventoryTableBody");
-                const newRow = document.createElement("tr");
-                newRow.id = "row-" + data.id;
-                /*is new row mein html content aya*/
-                newRow.innerHTML = `     
-                    <td class="text-left">${data.itemName}</td>
-                    <td class="text-left">${selectedCategoryName}</td>
-                    <td class="text-left">${data.description}</td>
-                    <td class="text-left">${data.company}</td>
-                    <td class="text-right">${data.purchaseValue}</td>
-                    <td class="text-center">${data.purchaseDate}</td>
-                    <td class="text-right">${data.tax}</td>
-                    <td class="text-right">${data.total}</td>
-                    <td>
-                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}" data-categoryid="${data.categoryId}">✏️</button>
-                        <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
-                    </td>
-                `;
-                tableBody.prepend(newRow); //added new row on top of table
-                attachRowEvents(newRow);  //manualy eventlistener deney ky liye del btn jo bd mein bna tha
-            }
-
-            form.reset(); //form clear kiya
-            totalInput.value = "0";
-            editingItemId = null;
-           saveBtn.innerText = "save";
-        })
-        //if any network erro it will handle that
-        .catch(error => {
-            modal.style.display = "none";
-            messageBox.innerText = "Something went wrong!";
-            messageBox.style.display = "block";
-            // ye code X milliseconds baad chalega
-            setTimeout(function () { 
-                messageBox.style.display = "none";
-             }, 3000); // 3000ms = 3 seconds
-        });
-        })
-
-*@
                             // delete button logic javascript
         // Delete logic 
 
         //Saare delete buttons ko event listener do--document.querySelectorAll(".delete-btn") saare delete 
         //buttons dhoondhta hai (page load ke waqt jo table mein the), har ek pe click listener lagata hai. 
         //Click hone pe, this.getAttribute("data-id") se us specific row ki ID nikalta hai, aur modal dikhata hai.
-       // document.querySelectorAll(".delete-btn").forEach(function (button) {
-       /* button.addEventListener("click", function () {
-            itemIdToDelete = this.getAttribute("data-id");
-            deleteModal.style.display = "flex";
-        });
-*/      // Delete Modal — "No"
+       // document.querySelectorAll(".delete-btn").forEach(function (button)
+         // Delete Modal — "No"
         cancelDeleteBtn.addEventListener("click", function () {
         deleteModal.style.display = "none";
         itemIdToDelete = null;
@@ -922,7 +925,7 @@ searchInput.addEventListener("input", function () {
 
 
 
-
+//categories ko load karne ka logic
 
 function loadCategories() {
     fetch("/Inventory/GetCategories")
@@ -942,13 +945,90 @@ function loadCategories() {
 loadCategories(); // page load hote hi call ho jaye
 
 
+//export logic incorporating search
+
+function exportToCSV() {
+    const rows = document.querySelectorAll("#inventoryTableBody tr:not(.search-hidden)");
+    
+    let csv = "Item Name,Category,Description,Company,Purchase Value,Purchase Date,Tax,Total\n";
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll("td");
+        const itemName = cells[0].textContent.trim();
+        const category = cells[1].textContent.trim();
+        const description = cells[2].querySelector(".tooltip-text")
+            ? cells[2].querySelector(".tooltip-text").textContent.trim()
+            : cells[2].textContent.trim();
+        const company = cells[3].textContent.trim();
+        const purchaseValue = cells[4].textContent.trim();
+        const purchaseDate = cells[5].textContent.trim();
+        const tax = cells[6].textContent.trim();
+        const total = cells[7].textContent.trim();
+
+        csv += `"${itemName}","${category}","${description}","${company}","${purchaseValue}","${purchaseDate}","${tax}","${total}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "inventory_export.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById("exportBtn").addEventListener("click", exportToCSV);
+
+
+//filter by date logic 
+const dateFilterBtn = document.getElementById("dateFilterBtn");
+const dateFilterDropdown = document.getElementById("dateFilterDropdown");
+const dateFrom = document.getElementById("dateFrom");
+const dateTo = document.getElementById("dateTo");
+const dateFilterLabel = document.getElementById("dateFilterLabel");
+
+dateFilterBtn.addEventListener("click", function () {
+    dateFilterDropdown.style.display = dateFilterDropdown.style.display === "none" ? "flex" : "none";
+});
+
+document.getElementById("applyDateFilter").addEventListener("click", function () {
+    const fromVal = dateFrom.value;
+    const toVal = dateTo.value;
+
+    document.querySelectorAll("#inventoryTableBody tr").forEach(row => {
+        const editBtn = row.querySelector(".edit-btn");
+        const rawDate = editBtn ? editBtn.getAttribute("data-purchasedate") : null;
+
+        let matches = true;
+        if (rawDate) {
+            if (fromVal && rawDate < fromVal) matches = false;
+            if (toVal && rawDate > toVal) matches = false;
+        }
+        row.classList.toggle("date-hidden", !matches);
+    });
+
+    dateFilterLabel.textContent = (fromVal || toVal) ? `${fromVal || "..."} to ${toVal || "..."}` : "Filter by Date";
+    dateFilterDropdown.style.display = "none";
+    currentPage = 1;
+    renderPagination();
+});
+
+document.getElementById("clearDateFilter").addEventListener("click", function () {
+    dateFrom.value = "";
+    dateTo.value = "";
+    document.querySelectorAll("#inventoryTableBody tr").forEach(row => row.classList.remove("date-hidden"));
+    dateFilterLabel.textContent = "Filter by Date";
+    dateFilterDropdown.style.display = "none";
+    currentPage = 1;
+    renderPagination();
+});
+ 
 //pagination logic
 //wahi rows jo fun sy match ho rahi hain ya sab agar search khali hai
 function getVisibleRows(){
-    const allRows =Array.from(document.querySelectorAll("#inventoryTableBody tr"));
-    return allRows.filter(row=>!row.classList.contains("search-hidden") );
+    const allRows = Array.from(document.querySelectorAll("#inventoryTableBody tr"));
+    return allRows.filter(row => !row.classList.contains("search-hidden") && !row.classList.contains("date-hidden"));
 }
-
 function renderPagination(){
     const visibleRows= getVisibleRows();
     const totalPages=Math.ceil(visibleRows.length  / rowsPerPage);

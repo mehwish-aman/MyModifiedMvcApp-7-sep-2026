@@ -3109,11 +3109,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\USER\\MyAdvancedMvcApp\\MySPMvcApp\\MyMvcApp.csproj",
+      "projectUniqueName": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj",
       "projectName": "MyMvcApp",
-      "projectPath": "C:\\Users\\USER\\MyAdvancedMvcApp\\MySPMvcApp\\MyMvcApp.csproj",
+      "projectPath": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj",
       "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\USER\\MyAdvancedMvcApp\\MySPMvcApp\\obj\\",
+      "outputPath": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config"

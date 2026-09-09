@@ -35,15 +35,19 @@ public class InventoryController : Controller //inheriting render, req features 
 
         try
         {
-        var items = _context.InventoryItems //context db ka constructor hai,inventory items uski property hai
-        //jo table ko rep kr rahi hai takay hm data jo db sy a raha usy bd mein use kr skein jesy hmny view 
-        //mein dikhan ahai nahin kriengy to b chlyga pr ap inspect nhi r skty phr is liye bnay ahai.
-        .FromSqlRaw("EXEC Inventory_Items @action= {0}", "SELECT")  //sp yahn call kiya hai yeh from wali data get krny ky liye use hota hai
-        //0 a placeholder whihc is used to save value safely  and select yeh sp  hai to get data from db
-        .AsEnumerable()      //error ki waja sy dala tha ye is sy resolve ho gaya tha(that ef error on decs now it will tell to conv data into c#list and handle)
-        .OrderByDescending(i=>i.Id)
-        .ToList(); //to be safe from multiple data query or connection closed error
-        return View(items); //yhn view return ho jayga yani jis ki get req ae hai, html mein model list item declared hai yeh render krdega using that @foreach loop into html view page
+            var msgParam=new SqlParameter("@msg", System.Data.SqlDbType.NVarChar, 250)
+            {
+                Direction=ParameterDirection.Output
+            };
+            var items = _context.InventoryItems //context db ka constructor hai,inventory items uski property hai
+            //jo table ko rep kr rahi hai takay hm data jo db sy a raha usy bd mein use kr skein jesy hmny view 
+            //mein dikhan ahai nahin kriengy to b chlyga pr ap inspect nhi r skty phr is liye bnay ahai.
+            .FromSqlRaw("EXEC Inventory_Items @msg= {0} OUTPUT", msgParam)  //sp yahn call kiya hai yeh from wali data get krny ky liye use hota hai
+            //0 a placeholder whihc is used to save value safely  and select yeh sp  hai to get data from db
+            .AsEnumerable()      //error ki waja sy dala tha ye is sy resolve ho gaya tha(that ef error on decs now it will tell to conv data into c#list and handle)
+            .OrderByDescending(i=>i.Id)
+            .ToList(); //to be safe from multiple data query or connection closed error
+            return View(items); //yhn view return ho jayga yani jis ki get req ae hai, html mein model list item declared hai yeh render krdega using that @foreach loop into html view page
         }
         catch (Exception ex)
         {
@@ -111,11 +115,11 @@ public class InventoryController : Controller //inheriting render, req features 
     };
     //EXECUUTE wali jab srf query chalani ho, data wapis na chhaiyay ho. r ye value {n}, sql injection sy bachny ky liye.
     _context.Database.ExecuteSqlRaw(
-        "EXEC Inventory_Items @action = {0}, @Id = {1} OUTPUT, @ItemName = {2}, @Description = {3}, @PurchaseValue = {4}, @PurchaseDate = {5}, @Tax = {6}, @Company = {7}, @Total = {8}, @CategoryId={9}, @msg ={10} OUTPUT",
-        "INSERT", idParam, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total,model.CategoryId,  msgParam
-    );
+    "EXEC Inventory_Items @Id = {0} OUTPUT, @ItemName = {1}, @Description = {2}, @PurchaseValue = {3}, @PurchaseDate = {4}, @Tax = {5}, @Company = {6}, @Total = {7}, @CategoryId = {8}, @msg = {9} OUTPUT",
+    idParam, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total, model.CategoryId, msgParam
+);
      model.Id = (int)idParam.Value;   // database se naya generated Id yahan mil gaya. yeh ab model ky thrgh view mwin dikha sakty hain hm ab. pr isy pehly cnvrt kr liya hai int mein.
-     string msg = msgParam.Value?.ToString() ?? "Item saved successfully to the database!";  // database se msg wapis mil gaya. yeh ab model ky thrgh view mwin dikha sakty hain hm ab. pr isy pehly cnvrt kr liya hai string mein.
+     string msg = msgParam.Value?.ToString() ?? " ";  // database se msg wapis mil gaya. yeh ab model ky thrgh view mwin dikha sakty hain hm ab. pr isy pehly cnvrt kr liya hai string mein.
          //new- http- 200 okay status code. aik anonymous obj mein srf data hota hai auto con`vert json mein ho kr phir 
          //S ko milta hai new item ki sari details. JS us data ko table mein show krta hai.
     return Ok(new
@@ -156,15 +160,15 @@ public IActionResult Update(int id, InventoryItem model)
         {
             Direction=ParameterDirection.Output
         };
-
-        var rowsAffected = _context.Database.ExecuteSqlRaw("EXEC Inventory_Items @action = {0}, @Id = {1}, @ItemName = {2}, @Description = {3}, @PurchaseValue = {4}, @PurchaseDate = {5}, @Tax = {6}, @Company = {7}, @Total = {8},@CategoryId = {9}, @msg = {10} OUTPUT",
-            "UPDATE", id, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total, model.CategoryId, msgParam
-        );
+        var rowsAffected = _context.Database.ExecuteSqlRaw(
+    "EXEC Inventory_Items @Id = {0}, @ItemName = {1}, @Description = {2}, @PurchaseValue = {3}, @PurchaseDate = {4}, @Tax = {5}, @Company = {6}, @Total = {7}, @CategoryId = {8}, @msg = {9} OUTPUT",
+    id, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total, model.CategoryId, msgParam
+);
         if (rowsAffected == 0)
         {
             return NotFound(new { message = "Item not found." });
         }
-        string msg = msgParam.Value?.ToString() ?? "Item updated successfully.";  
+        string msg = msgParam.Value?.ToString() ?? " ";  
         return Ok(new
         {
             message = msg,
@@ -203,14 +207,16 @@ public IActionResult Delete(int id)
         {
             Direction = ParameterDirection.Output
         };
-        var rowsAffected  = _context.Database.ExecuteSqlRaw("EXEC Inventory_Items @action ={0}, @Id={1}, @msg ={2} OUTPUT" , "DELETE",id, msgParam );
-
+         var rowsAffected = _context.Database.ExecuteSqlRaw(
+            "EXEC Inventory_Items @Id = {0}, @IsDeleted = {1}, @msg = {2} OUTPUT",
+            id, true, msgParam
+        );
         if (rowsAffected==0)
         {
             return NotFound(new { message = "Item not found." });
         }
-        string msg =msgParam.Value?.ToString() ?? "Item deleted Successfully.";
-        return Ok(new { message = msg});
+       // string msg =msgParam.Value?.ToString() ?? "Item deleted Successfully.";
+        return Ok(new { message = msgParam.Value?.ToString() ?? " "});
 
    }
    catch (Exception ex)
