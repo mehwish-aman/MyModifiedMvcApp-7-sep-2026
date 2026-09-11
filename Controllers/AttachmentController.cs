@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 public class AttachmentsController : Controller
 {
     private readonly AppDbContext _context;
-
+    private const string CurrentUser = "user";
     public AttachmentsController(AppDbContext context)
     {
         _context = context;
@@ -32,8 +32,8 @@ public class AttachmentsController : Controller
         };
 
         _context.Database.ExecuteSqlRaw(
-            "EXEC Attachments_Manage @InventoryItemId = {0}, @FileName = {1}, @FileType = {2}, @FileData = {3}, @msg = {4} OUTPUT",
-            inventoryItemId, file.FileName, file.ContentType, fileData, msgParam
+            "EXEC Attachments_Manage @InventoryItemId = {0}, @FileName = {1}, @FileType = {2}, @FileData = {3},@CreatedBy = {4}, @msg = {5} OUTPUT",
+            inventoryItemId, file.FileName, file.ContentType, fileData, CurrentUser, msgParam
         );
 
         string msg = msgParam.Value?.ToString() ?? "";
@@ -84,8 +84,8 @@ public class AttachmentsController : Controller
             };
 
             var rowsAffected = _context.Database.ExecuteSqlRaw(
-                "EXEC Attachments_Manage @Id = {0}, @IsDeleted = {1}, @msg = {2} OUTPUT",
-                id, true, msgParam
+                "EXEC Attachments_Manage @Id = {0}, @IsDeleted = {1},@ModifiedBy = {2}, @msg = {3} OUTPUT",
+                id, true, CurrentUser, msgParam
             );
 
             if (rowsAffected == 0)

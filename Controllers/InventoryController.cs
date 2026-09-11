@@ -12,7 +12,7 @@ public class InventoryController : Controller //inheriting render, req features 
 
     private readonly AppDbContext _context;   //Ye sirf keh raha hai: "Is Controller ke paas ek _context naam ki cheez hogi, 
     //jo database se baat karegi." Abhi khali hai, sirf declare kiya.
-
+    private const string CurrentUser = "user";
     public InventoryController(AppDbContext context)  //Jab bhi website kholtengy ho (Inventory page pe jaty hain), 
     //ASP.NET khud ek AppDbContext bana kar is Controller ko de deta hai khud kuch karna nahi padta, ye automatic hai.
     {
@@ -115,8 +115,8 @@ public class InventoryController : Controller //inheriting render, req features 
     };
     //EXECUUTE wali jab srf query chalani ho, data wapis na chhaiyay ho. r ye value {n}, sql injection sy bachny ky liye.
     _context.Database.ExecuteSqlRaw(
-    "EXEC Inventory_Items @Id = {0} OUTPUT, @ItemName = {1}, @Description = {2}, @PurchaseValue = {3}, @PurchaseDate = {4}, @Tax = {5}, @Company = {6}, @Total = {7}, @CategoryId = {8}, @msg = {9} OUTPUT",
-    idParam, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total, model.CategoryId, msgParam
+    "EXEC Inventory_Items @Id = {0} OUTPUT, @ItemName = {1}, @Description = {2}, @PurchaseValue = {3}, @PurchaseDate = {4}, @Tax = {5}, @Company = {6}, @Total = {7}, @CategoryId = {8}, @AddedBy = {9},@msg = {9} OUTPUT",
+    idParam, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate, model.Tax, model.Company, model.Total, model.CategoryId, CurrentUser, msgParam
 );
      model.Id = (int)idParam.Value;   // database se naya generated Id yahan mil gaya. yeh ab model ky thrgh view mwin dikha sakty hain hm ab. pr isy pehly cnvrt kr liya hai int mein.
      string msg = msgParam.Value?.ToString() ?? " ";  // database se msg wapis mil gaya. yeh ab model ky thrgh view mwin dikha sakty hain hm ab. pr isy pehly cnvrt kr liya hai string mein.

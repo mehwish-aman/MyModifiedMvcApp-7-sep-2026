@@ -310,11 +310,10 @@
     transition: opacity 0.2s;
     white-space: normal;
 }
-.tooltip-wrapper:hover .tooltip-text {
+.tooltip-wrapper.has-overflow:hover .tooltip-text {
     visibility: visible;
     opacity: 1;
 }
-
 .add-row-box input,
 .add-row-box select {
     padding: 8px 10px;
@@ -490,6 +489,32 @@
     object-fit: contain;
     margin-right: 0;   /* gap already spacing de raha hai, ye hata do */
 }
+.attachment-badge {
+    cursor: pointer;
+    color: #0d5ed8;
+}
+
+.attachment-popup {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    padding: 10px;
+    min-width: 180px;
+    z-index: 500;
+}
+
+.popup-file {
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid #eee;
+}
+
+.popup-empty {
+    font-size: 13px;
+    color: #777;
+}
 </style>
 <h2 class="page-title" >Inventory Dashboard</h2>
 
@@ -543,6 +568,7 @@ ke use ke liye.-->
     <button type="button" id="fileUploadBtn">📎Upload File</button>
     <input type="file" id="fileInput" multiple style="display:none;" accept=".pdf,.csv,.xls,.xlsx,.xml, .txt" />
     <div id="stagedFilesList"></div>
+    <div id="attachmentError" style="display:none; color:#dc3545; font-size:13px; margin-top:5px;"></div>
 </div>
 </div>
 <div class="table-box">
@@ -557,9 +583,10 @@ ke use ke liye.-->
                 <th class="text-left">Description</th>
                 <th class="text-left">Company</th>
                 <th class="text-right">Purchase Value</th>
-                <th class="text-center">Purchase Date</th>
                 <th class="text-right"> Tax %</th>
                 <th class="text-right">Total</th>
+                <th class="text-center">Purchase Date</th>
+                <th class="text-center">Attachments</th>
                 <th>Action</th>
             </tr>
         </thead>
@@ -567,7 +594,12 @@ ke use ke liye.-->
         @foreach (var item in Model)
         {
             <tr id="row-@item.Id">
-                <td class="text-left">@item.ItemName</td>
+                <td class="text-left">
+                     <span class="tooltip-wrapper">
+                        <span class="truncate">@item.ItemName</span>
+                        <span class="tooltip-text">@item.ItemName</span>
+                    </span>
+                </td>
                 <td class="text-left">@item.CategoryName</td>
                 <td class="text-left"> 
                     <span class="tooltip-wrapper">
@@ -575,20 +607,28 @@ ke use ke liye.-->
                         <span class="tooltip-text">@item.Description</span>
                     </span>
                 </td>
-                <td class="text-left">@item.Company</td>
+                <td class="text-left">
+                    <span class="tooltip-wrapper">
+                        <span class="truncate">@item.Company</span>
+                        <span class="tooltip-text">@item.Company</span>
+                    </span>
+                </td>
                 <td class="text-right">@item.PurchaseValue</td>
-                <td class="text-center">@item.PurchaseDate.ToShortDateString()</td>
                 <td class="text-right">@item.Tax</td>
                 <td class="text-right">@item.Total</td>
+                <td class="text-center">@item.PurchaseDate.ToShortDateString()</td>
+                <td class="text-center">
+    <span class="attachment-badge" data-id="@item.Id">📎 @item.AttachmentCount</span>
+</td>
                 <td>
                     <button type="button" class="edit-btn"
                         data-id="@item.Id"
                         data-itemname="@item.ItemName"
                         data-description="@item.Description"
                         data-purchasevalue="@item.PurchaseValue"
-                        data-purchasedate="@item.PurchaseDate.ToString("yyyy-MM-dd")"
                         data-tax="@item.Tax"
                         data-company="@item.Company"
+                         data-purchasedate="@item.PurchaseDate.ToString("yyyy-MM-dd")"
                         data-categoryid="@item.CategoryId">✏️</button>
                     <button type="button" class="delete-btn" data-id="@item.Id">🗑️</button>
                 </td>
@@ -668,7 +708,7 @@ const validationError = document.getElementById("validationError");
 const purchaseValueInput = document.getElementById("rowPurchaseValue");
 const taxInput = document.getElementById("rowTax");
 const totalInput = document.getElementById("rowTotal");
-const rowsPerPage=4;
+const rowsPerPage=6;
 let currentPage=1;
 
 let editingItemId = null; /*null matlab "naya item add ho raha hai", number matlab "is Id ko edit 
@@ -696,6 +736,7 @@ rowCancelBtn.addEventListener("click", function () {
     stagedFiles = [];
     existingFiles = [];
     renderStagedFiles();
+    document.getElementById("attachmentError").style.display = "none";
 });
 
 
@@ -718,17 +759,31 @@ function loadExistingAttachments(itemId) {
 /////staged files ko upload karne ka function, ye function har file ke liye ek 
 //FormData banata hai aur fetch se POST request bhejta hai.
 function uploadStagedFiles(itemId) {
-    stagedFiles.forEach(file => {
+    const uploadPromises = stagedFiles.map(file => {
         const fileFormData = new FormData();
         fileFormData.append("inventoryItemId", itemId);
         fileFormData.append("file", file);
-
-        fetch("/Attachments/Upload", { method: "POST", body: fileFormData })
-            .catch(error => console.error("File upload failed:", error));
+        return fetch("/Attachments/Upload", { method: "POST", body: fileFormData });
     });
 
-    stagedFiles = [];
-    renderStagedFiles();
+    Promise.all(uploadPromises)
+        .then(() => {
+            stagedFiles = [];
+            renderStagedFiles();
+            updateAttachmentBadge(itemId);
+        })
+        .catch(error => console.error("No Attachments", error));
+}
+
+function updateAttachmentBadge(itemId) {
+    fetch("/Attachments/GetByItem?inventoryItemId=" + itemId)
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.querySelector(`.attachment-badge[data-id="${itemId}"]`);
+            if (badge) {
+                badge.textContent = "📎 " + data.length;
+            }
+        });
 }
 
 
@@ -750,12 +805,15 @@ rowSaveBtn.addEventListener("click", function () {
         }
     });
     if (!isValid) return;
-    // Naya check — attachment required hai
-    if ((existingFiles.length + stagedFiles.length) === 0) {
-    alert("attachment required!");
-    return;
-}
+   const attachmentError = document.getElementById("attachmentError");
 
+if ((existingFiles.length + stagedFiles.length) === 0) {
+    attachmentError.textContent = "Attachment required!";
+    attachmentError.style.display = "block";
+    return;
+} else {
+    attachmentError.style.display = "none";
+}
 
     const url = editingItemId ? "/Inventory/Update/" + editingItemId : "/Inventory/Save";
     const categorySelect = addRowContainer.querySelector('[data-field="CategoryId"]');
@@ -765,7 +823,7 @@ rowSaveBtn.addEventListener("click", function () {
         .then(data => {
             addRowContainer.style.display = "none";
             inputs.forEach(input => input.value = "");
-
+            document.getElementById("attachmentError").style.display = "none";
             messageBox.innerText = data.message;
             messageBox.style.display = "block";
             setTimeout(function () { messageBox.style.display = "none"; }, 3000);
@@ -773,41 +831,75 @@ rowSaveBtn.addEventListener("click", function () {
             if (editingItemId) {
                 const row = document.getElementById("row-" + data.id);
                 row.innerHTML = `
-                    <td class="text-left">${data.itemName}</td>
-                     <td class="text-left">${selectedCategoryName}</td>
-                    <td class="text-left">${data.description}</td>
-                    <td class="text-left">${data.company}</td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.itemName}</span>
+                            <span class="tooltip-text">${data.itemName}</span>
+                        </span>
+                    </td>
+                    <td class="text-left">${selectedCategoryName}</td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.description}</span>
+                            <span class="tooltip-text">${data.description}</span>
+                        </span>
+                    </td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.company}</span>
+                            <span class="tooltip-text">${data.company}</span>
+                        </span>
+                    </td>
                     <td class="text-right">${data.purchaseValue}</td>
-                    <td class="text-center">${data.purchaseDate}</td>
                     <td class="text-right">${data.tax}</td>
                     <td class="text-right">${data.total}</td>
+                     <td class="text-center">${data.purchaseDate}</td>
+                    <td class="text-center"><span class="attachment-badge" data-id="${data.id}">📎 0</span></td>
                     <td>
-                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}" data-categoryid="${data.categoryId}">✏️</button>
+                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-tax="${data.tax}" data-company="${data.company}" data-purchasedate="${data.rawDate}" data-categoryid="${data.categoryId}">✏️</button>
                         <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
                     </td>
                 `;
                 attachRowEvents(row);
+                updateTooltipVisibility(row); 
                 editingItemId = null;
             } else {
                 const tableBody = document.getElementById("inventoryTableBody");
                 const newRow = document.createElement("tr");
                 newRow.id = "row-" + data.id;
                 newRow.innerHTML = `
-                    <td class="text-left">${data.itemName}</td>
-                     <td class="text-left">${selectedCategoryName}</td>
-                    <td class="text-left">${data.description}</td>
-                    <td class="text-left">${data.company}</td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.itemName}</span>
+                            <span class="tooltip-text">${data.itemName}</span>
+                        </span>
+                    </td>
+                    <td  class="truncate">${selectedCategoryName}</td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.description}</span>
+                            <span class="tooltip-text">${data.description}</span>
+                        </span>
+                    </td>
+                    <td class="text-left">
+                        <span class="tooltip-wrapper">
+                            <span class="truncate">${data.company}</span>
+                            <span class="tooltip-text">${data.company}</span>
+                        </span>
+                    </td>
                     <td class="text-right">${data.purchaseValue}</td>
-                    <td class="text-center">${data.purchaseDate}</td>
                     <td class="text-right">${data.tax}</td>
                     <td class="text-right">${data.total}</td>
+                    <td class="text-center">${data.purchaseDate}</td>
+                    <td class="text-center"><span class="attachment-badge" data-id="${data.id}">📎 0</span></td>
                     <td>
-                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}"  data-categoryid="${data.categoryId}">✏️</button>
+                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}" data-purchasedate="${data.rawDate}"  data-categoryid="${data.categoryId}">✏️</button>
                         <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
                     </td>
                 `;
                 tableBody.prepend(newRow);
                 attachRowEvents(newRow);
+                updateTooltipVisibility(newRow); 
             }
             // NAYA — staged files ko upload karo, ab ke Id mil chuki hai
             uploadStagedFiles(data.id);
@@ -856,13 +948,14 @@ function renderStagedFiles() {
                 .then(data => {
                     existingFiles = existingFiles.filter(f => f.id != attachmentId);
                     renderStagedFiles();
+                     updateAttachmentBadge(editingItemId);
                 })
                 .catch(error => console.error("Delete failed:", error));
         });
     });
 }
 
-////function for blocking ceintific notation
+////function for blocking scientific notation
 
 function blockScientificNotation(inputElement) {
     inputElement.addEventListener("keydown", function (e) {
@@ -920,19 +1013,33 @@ function attachRowEvents(row) {
     addRowContainer.querySelector('[data-field="ItemName"]').value = this.getAttribute("data-itemname");
     addRowContainer.querySelector('[data-field="Description"]').value = this.getAttribute("data-description");
     addRowContainer.querySelector('[data-field="PurchaseValue"]').value = this.getAttribute("data-purchasevalue");
-    addRowContainer.querySelector('[data-field="PurchaseDate"]').value = this.getAttribute("data-purchasedate");
     addRowContainer.querySelector('[data-field="Tax"]').value = this.getAttribute("data-tax");
     addRowContainer.querySelector('[data-field="Company"]').value = this.getAttribute("data-company");
+    addRowContainer.querySelector('[data-field="PurchaseDate"]').value = this.getAttribute("data-purchasedate");
     addRowContainer.querySelector('[data-field="CategoryId"]').value = this.getAttribute("data-categoryid");
     calculateTotal();
     stagedFiles = [];
     loadExistingAttachments(editingItemId);
     addRowContainer.style.display = "flex";
 });
+    const badge = row.querySelector(".attachment-badge");
+    if (badge) {
+        badge.addEventListener("mouseenter", function () {
+            const itemId = this.getAttribute("data-id");
+            showAttachmentPopup(this, itemId);
+        });
+        badge.addEventListener("mouseleave", function () {
+            if (currentPopup) {
+                currentPopup.remove();
+                currentPopup = null;
+            }
+        });
+}
 }
     // Page load ke waqt jo rows hain, unko events do
 document.querySelectorAll("#inventoryTableBody tr").forEach(function (row) {
     attachRowEvents(row);
+    updateTooltipVisibility(row); 
 });
 
 
@@ -950,9 +1057,9 @@ function buildRowHtml(data) {
         </td>
          <td class="text-left">${data.company}</td>
         <td class="text-right">${data.purchaseValue}</td>
-        <td class="text-center">${data.purchaseDate}</td>
         <td class="text-right">${data.tax}</td>
         <td class="text-right">${data.total}</td>
+         <td class="text-center">${data.purchaseDate}</td>
        
         <td>
             <button type="button" class="edit-btn"
@@ -960,9 +1067,9 @@ function buildRowHtml(data) {
                 data-itemname="${data.itemName}"
                 data-description="${data.description}"
                 data-purchasevalue="${data.purchaseValue}"
-                data-purchasedate="${data.rawDate}"
                 data-tax="${data.tax}"
                 data-company="${data.company}" 
+                data-purchasedate="${data.rawDate}"
                 data-categoryid="${data.categoryId}">✏️</button>
             <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
         </td>
@@ -997,6 +1104,18 @@ function buildRowHtml(data) {
                 if (row) {
                     row.remove();
                 }
+
+                 // NAYA — agar jo item delete hua, wahi Edit mein khula hua tha, container bhi band/reset karo
+            if (itemIdToDelete == editingItemId) {
+                addRowContainer.style.display = "none";
+                addRowContainer.querySelectorAll("[data-field]").forEach(input => input.value = "");
+                editingItemId = null;
+                stagedFiles = [];
+                existingFiles = [];
+                renderStagedFiles();
+                document.getElementById("attachmentError").style.display = "none";
+            }
+
                   // Save/Update jaisa hi messageBox pattern delete ky loiye b 
             messageBox.innerText = data.message;
             messageBox.style.display = "block";
@@ -1023,7 +1142,17 @@ wo purana loop "dekh" nahi sakta. Isko "Event Delegation" problem kehte hain rea
 behtar solution hota hai (parent element pe ek hi listener lagana), jo hum chahे े to future mein improve 
 kar sakte hain.*/
 
-
+/////toool visibility logic
+function updateTooltipVisibility(row) {
+    row.querySelectorAll(".tooltip-wrapper").forEach(wrapper => {
+        const truncateSpan = wrapper.querySelector(".truncate");
+        if (truncateSpan.scrollWidth > truncateSpan.clientWidth) {
+            wrapper.classList.add("has-overflow");
+        } else {
+            wrapper.classList.remove("has-overflow");
+        }
+    });
+}
 
 //search logic
 const searchInput = document.getElementById("searchInput"); 
@@ -1076,18 +1205,22 @@ function exportToCSV() {
     
     rows.forEach(row => {
         const cells = row.querySelectorAll("td");
-        const itemName = cells[0].textContent.trim();
+        const itemName = cells[0].querySelector(".tooltip-text")
+            ? cells[2].querySelector(".tooltip-text").textContent.trim()
+            : cells[2].textContent.trim();
         const category = cells[1].textContent.trim();
         const description = cells[2].querySelector(".tooltip-text")
             ? cells[2].querySelector(".tooltip-text").textContent.trim()
             : cells[2].textContent.trim();
-        const company = cells[3].textContent.trim();
+        const company = cells[3].querySelector(".tooltip-text")
+            ? cells[2].querySelector(".tooltip-text").textContent.trim()
+            : cells[2].textContent.trim();
         const purchaseValue = cells[4].textContent.trim();
-        const purchaseDate = cells[5].textContent.trim();
         const tax = cells[6].textContent.trim();
         const total = cells[7].textContent.trim();
+        const purchaseDate = cells[5].textContent.trim();
 
-        csv += `"${itemName}","${category}","${description}","${company}","${purchaseValue}","${purchaseDate}","${tax}","${total}"\n`;
+        csv += `"${itemName}","${category}","${description}","${company}","${purchaseValue}","${tax}","${total}","${purchaseDate}"\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -1168,6 +1301,62 @@ fileInput.addEventListener("change", function () {
     fileInput.value = "";
     renderStagedFiles();
 });
+
+
+
+
+//////files list show krny ky liye aik event listenr logic 
+//document.querySelectorAll(".attachment-badge").forEach(badge => {
+  //  badge.addEventListener("click", function () {
+   //     const itemId = this.getAttribute("data-id");
+     //   showAttachmentPopup(this, itemId);
+    //});
+//});
+
+let currentPopup = null;
+
+function showAttachmentPopup(badgeElement, itemId) {
+    if (currentPopup) {
+        currentPopup.remove();
+        currentPopup = null;
+    }
+
+    const popup = document.createElement("div");
+    popup.className = "attachment-popup";
+    popup.innerHTML = "Loading...";
+    document.body.appendChild(popup);
+
+    const rect = badgeElement.getBoundingClientRect();
+    popup.style.top = (rect.bottom + window.scrollY + 5) + "px";
+    popup.style.left = (rect.left + window.scrollX) + "px";
+
+    currentPopup = popup;
+
+    fetch("/Attachments/GetByItem?inventoryItemId=" + itemId)
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                popup.innerHTML = "<div class='popup-empty'>No acttachments found</div>";
+            } else {
+                popup.innerHTML = data.map(f => `<div class="popup-file">${f.fileName}</div>`).join("");
+            }
+        })
+        .catch(error => {
+            popup.innerHTML = "<div class='popup-empty'>Load nahi ho saka</div>";
+        });
+}
+
+document.addEventListener("click", function (e) {
+    if (currentPopup && !currentPopup.contains(e.target) && !e.target.classList.contains("attachment-badge")) {
+        currentPopup.remove();
+        currentPopup = null;
+    }
+});
+
+
+
+
+
 
 //pagination logic
 //wahi rows jo fun sy match ho rahi hain ya sab agar search khali hai

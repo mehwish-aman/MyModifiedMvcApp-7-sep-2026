@@ -14,7 +14,7 @@ public class AccountController : Controller  //controller ki class sy inherit kr
     public IActionResult Login(LoginModel model)
     {
         //checked for values login
-        if(model.Username=="admin"&& model.Password=="1234")  //hardcoded credentials get kiyay huye data sy match kryga 
+        if(model.Username=="user"&& model.Password=="122")  //hardcoded credentials get kiyay huye data sy match kryga 
         {
             return RedirectToAction("Add","Inventory");  ///if matched then inventory ocntroller ky add action py route kr do
         }
