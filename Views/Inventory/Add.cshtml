@@ -558,9 +558,9 @@ ke use ke liye.-->
         <option value="">-- Select Category --</option>
     </select>
     <input type="number" step="0.01" id="rowPurchaseValue" placeholder="Purchase Value" data-field="PurchaseValue" required />
-    <input type="date" data-field="PurchaseDate" required />
     <input type="number" step="0.01" id="rowTax" placeholder="Tax" data-field="Tax" required />
     <input type="number" step="0.01" id="rowTotal" placeholder="Total" data-field="Total" readonly />
+    <input type="date" data-field="PurchaseDate" required />
     <button type="button" id="rowSaveBtn">💾</button>
     <button type="button" id="rowCancelBtn">✖️</button>
     </div>
@@ -804,7 +804,7 @@ rowSaveBtn.addEventListener("click", function () {
             input.reportValidity();
         }
     });
-    if (!isValid) return;
+    if (!isValid) return ;
    const attachmentError = document.getElementById("attachmentError");
 
 if ((existingFiles.length + stagedFiles.length) === 0) {
@@ -1190,7 +1190,7 @@ function loadCategories() {
                 categorySelect.appendChild(option);
             });
         })
-        .catch(error => console.error("Categories load nahi hui:", error));
+        .catch(error => console.error("Can't load Categoies:", error));
 }
 
 loadCategories(); // page load hote hi call ho jaye
