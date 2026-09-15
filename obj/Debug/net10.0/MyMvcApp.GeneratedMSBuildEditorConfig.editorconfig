@@ -20,33 +20,33 @@ build_property.TargetFrameworkVersion = v10.0
 build_property.EntryPointFilePath = 
 build_property.RootNamespace = MyMvcApp
 build_property.RootNamespace = MyMvcApp
-build_property.ProjectDir = C:\Users\USER\MyModifiedMvcApp-2SP\MyAdvancedMvcApp\
+build_property.ProjectDir = G:\.NET\ASP.NET\IMP_ASP_NET_MVC\MyTransaction_BlockMvcApp-14-sep-2026\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 10.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\USER\MyModifiedMvcApp-2SP\MyAdvancedMvcApp
+build_property.MSBuildProjectDirectory = G:\.NET\ASP.NET\IMP_ASP_NET_MVC\MyTransaction_BlockMvcApp-14-sep-2026
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 10.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/USER/MyModifiedMvcApp-2SP/MyAdvancedMvcApp/Views/Account/Login.cshtml]
+[G:/.NET/ASP.NET/IMP_ASP_NET_MVC/MyTransaction_BlockMvcApp-14-sep-2026/Views/Account/Login.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxMb2dpbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/USER/MyModifiedMvcApp-2SP/MyAdvancedMvcApp/Views/Account/Welcome.cshtml]
+[G:/.NET/ASP.NET/IMP_ASP_NET_MVC/MyTransaction_BlockMvcApp-14-sep-2026/Views/Account/Welcome.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcQWNjb3VudFxXZWxjb21lLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/USER/MyModifiedMvcApp-2SP/MyAdvancedMvcApp/Views/Home/Index.cshtml]
+[G:/.NET/ASP.NET/IMP_ASP_NET_MVC/MyTransaction_BlockMvcApp-14-sep-2026/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/USER/MyModifiedMvcApp-2SP/MyAdvancedMvcApp/Views/Inventory/Add.cshtml]
+[G:/.NET/ASP.NET/IMP_ASP_NET_MVC/MyTransaction_BlockMvcApp-14-sep-2026/Views/Inventory/Add.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XEFkZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/USER/MyModifiedMvcApp-2SP/MyAdvancedMvcApp/Views/Inventory/Confirm.cshtml]
+[G:/.NET/ASP.NET/IMP_ASP_NET_MVC/MyTransaction_BlockMvcApp-14-sep-2026/Views/Inventory/Confirm.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSW52ZW50b3J5XENvbmZpcm0uY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 

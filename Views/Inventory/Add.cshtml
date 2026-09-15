@@ -736,6 +736,7 @@ rowCancelBtn.addEventListener("click", function () {
     stagedFiles = [];
     existingFiles = [];
     renderStagedFiles();
+    removedAttachmentIds = [];
     document.getElementById("attachmentError").style.display = "none";
 });
 
@@ -804,22 +805,33 @@ rowSaveBtn.addEventListener("click", function () {
             input.reportValidity();
         }
     });
-    if (!isValid) return ;
-   const attachmentError = document.getElementById("attachmentError");
+    if (!isValid) return;
 
-if ((existingFiles.length + stagedFiles.length) === 0) {
-    attachmentError.textContent = "Attachment required!";
-    attachmentError.style.display = "block";
-    return;
-} else {
-    attachmentError.style.display = "none";
-}
+    /*const attachmentError = document.getElementById("attachmentError");
+    if ((existingFiles.length + stagedFiles.length) === 0) {
+        attachmentError.textContent = "Attachment required!";
+        attachmentError.style.display = "block";
+        return;
+    } else {
+        attachmentError.style.display = "none";
+    }*/
 
-    const url = editingItemId ? "/Inventory/Update/" + editingItemId : "/Inventory/Save";
+    if (editingItemId) {
+        formData.append("Id", editingItemId);
+    }
+    stagedFiles.forEach(file => formData.append("newFiles", file));
+    removedAttachmentIds.forEach(id => formData.append("removedAttachmentIds", id));
+
     const categorySelect = addRowContainer.querySelector('[data-field="CategoryId"]');
     const selectedCategoryName = categorySelect.options[categorySelect.selectedIndex].text;
-    fetch(url, { method: "POST", body: formData })
-        .then(response => response.json())
+
+    fetch("/Inventory/SaveWithAttachments", { method: "POST", body: formData })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.message || "Save failed"); });
+            }
+            return response.json();
+        })
         .then(data => {
             addRowContainer.style.display = "none";
             inputs.forEach(input => input.value = "");
@@ -861,7 +873,7 @@ if ((existingFiles.length + stagedFiles.length) === 0) {
                     </td>
                 `;
                 attachRowEvents(row);
-                updateTooltipVisibility(row); 
+                updateTooltipVisibility(row);
                 editingItemId = null;
             } else {
                 const tableBody = document.getElementById("inventoryTableBody");
@@ -874,7 +886,7 @@ if ((existingFiles.length + stagedFiles.length) === 0) {
                             <span class="tooltip-text">${data.itemName}</span>
                         </span>
                     </td>
-                    <td  class="truncate">${selectedCategoryName}</td>
+                    <td class="truncate">${selectedCategoryName}</td>
                     <td class="text-left">
                         <span class="tooltip-wrapper">
                             <span class="truncate">${data.description}</span>
@@ -893,27 +905,27 @@ if ((existingFiles.length + stagedFiles.length) === 0) {
                     <td class="text-center">${data.purchaseDate}</td>
                     <td class="text-center"><span class="attachment-badge" data-id="${data.id}">📎 0</span></td>
                     <td>
-                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-purchasedate="${data.rawDate}" data-tax="${data.tax}" data-company="${data.company}" data-purchasedate="${data.rawDate}"  data-categoryid="${data.categoryId}">✏️</button>
+                        <button type="button" class="edit-btn" data-id="${data.id}" data-itemname="${data.itemName}" data-description="${data.description}" data-purchasevalue="${data.purchaseValue}" data-tax="${data.tax}" data-company="${data.company}" data-purchasedate="${data.rawDate}" data-categoryid="${data.categoryId}">✏️</button>
                         <button type="button" class="delete-btn" data-id="${data.id}">🗑️</button>
                     </td>
                 `;
                 tableBody.prepend(newRow);
                 attachRowEvents(newRow);
-                updateTooltipVisibility(newRow); 
+                updateTooltipVisibility(newRow);
             }
-            // NAYA — staged files ko upload karo, ab ke Id mil chuki hai
-            uploadStagedFiles(data.id);
 
+            stagedFiles = [];
+            removedAttachmentIds = [];
+            existingFiles = [];
+            renderStagedFiles();
+            updateAttachmentBadge(data.id);
         })
         .catch(error => {
-            messageBox.innerText = "Something went wrong!";
+            messageBox.innerText = error.message || "Something went wrong! Nothing was saved.";
             messageBox.style.display = "block";
             setTimeout(function () { messageBox.style.display = "none"; }, 3000);
         });
 });
-
-
-
 
 function renderStagedFiles() {
     stagedFilesList.innerHTML = "";
@@ -942,15 +954,10 @@ function renderStagedFiles() {
 
     document.querySelectorAll(".remove-existing-file").forEach(btn => {
         btn.addEventListener("click", function () {
-            const attachmentId = this.getAttribute("data-id");
-            fetch("/Attachments/Delete/" + attachmentId, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    existingFiles = existingFiles.filter(f => f.id != attachmentId);
-                    renderStagedFiles();
-                     updateAttachmentBadge(editingItemId);
-                })
-                .catch(error => console.error("Delete failed:", error));
+        const attachmentId = this.getAttribute("data-id");
+        removedAttachmentIds.push(parseInt(attachmentId));
+        existingFiles = existingFiles.filter(f => f.id != attachmentId);
+        renderStagedFiles();
         });
     });
 }
@@ -1019,6 +1026,7 @@ function attachRowEvents(row) {
     addRowContainer.querySelector('[data-field="CategoryId"]').value = this.getAttribute("data-categoryid");
     calculateTotal();
     stagedFiles = [];
+    removedAttachmentIds = [];  
     loadExistingAttachments(editingItemId);
     addRowContainer.style.display = "flex";
 });
@@ -1285,6 +1293,7 @@ const fileInput = document.getElementById("fileInput");
 const stagedFilesList = document.getElementById("stagedFilesList");
 
 let stagedFiles = [];
+let removedAttachmentIds = [];   
 
 fileUploadBtn.addEventListener("click", function () {
     fileInput.click();

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using System.Data;   //for direction parameter for id which we used in insert func
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;   // ye naya add kiya
+
 public class InventoryController : Controller //inheriting render, req features etc
 { 
 
@@ -19,6 +20,118 @@ public class InventoryController : Controller //inheriting render, req features 
         _context = context;  //Jo cheez ASP.NET ne di, use humne apne _context field mein save kar liya, taake niche jitne 
         //bhi methods hain (Add, Save, Delete), sab isko use kar sakein database se baat karne ke liye.
     }
+
+
+
+///////TRANSACTION BLOCK/////
+
+[HttpPost]
+public async Task<IActionResult> SaveWithAttachments(
+    [FromForm] InventoryItem model,
+    List<IFormFile> newFiles,
+    List<int> removedAttachmentIds)
+{
+    if (!ModelState.IsValid)
+        return BadRequest(new { message = "Validation failed. Please check field limits." });
+
+    var strategy = _context.Database.CreateExecutionStrategy();
+
+    try
+    {
+        var result = await strategy.ExecuteAsync(async () =>
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // ---- Step 1: Insert or Update the item ----
+                var idParam = new SqlParameter("@Id", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.InputOutput,
+                    Value = model.Id > 0 ? model.Id : (object)DBNull.Value
+                };
+                var itemMsg = new SqlParameter("@msg", SqlDbType.NVarChar, 250)
+                {
+                    Direction = ParameterDirection.Output
+                };
+
+                _context.Database.ExecuteSqlRaw(
+                    "EXEC Inventory_Items @Id = {0} OUTPUT, @ItemName = {1}, @Description = {2}, @PurchaseValue = {3}, @PurchaseDate = {4}, @Tax = {5}, @Company = {6}, @Total = {7}, @CategoryId = {8}, @AddedBy = {9}, @msg = {10} OUTPUT",
+                    idParam, model.ItemName, model.Description, model.PurchaseValue, model.PurchaseDate,
+                    model.Tax, model.Company, model.Total, model.CategoryId, CurrentUser, itemMsg);
+
+                ThrowIfSpError(itemMsg, "Item save");
+
+                int itemId = idParam.Value == DBNull.Value ? model.Id : (int)idParam.Value;
+
+                // ---- Step 2: soft-delete attachments the user removed ----
+                foreach (var removedId in removedAttachmentIds ?? new List<int>())
+                {
+                    var delMsg = new SqlParameter("@msg", SqlDbType.NVarChar, 250) { Direction = ParameterDirection.Output };
+                    _context.Database.ExecuteSqlRaw(
+                        "EXEC Attachments_Manage @Id = {0}, @IsDeleted = {1}, @ModifiedBy = {2}, @msg = {3} OUTPUT",
+                        removedId, true, CurrentUser, delMsg);
+                    ThrowIfSpError(delMsg, $"Attachment delete (Id={removedId})");
+                }
+
+                // ---- Step 3: insert newly staged files ----
+                foreach (var file in newFiles ?? new List<IFormFile>())
+                {
+                   // throw new Exception("Testing rollback manually");
+                   //throw new Exception("Testing update rollback");   // TEMP
+                    using var ms = new MemoryStream();
+                    await file.CopyToAsync(ms);
+                    var fileData = ms.ToArray();
+
+                    var insMsg = new SqlParameter("@msg", SqlDbType.NVarChar, 250) { Direction = ParameterDirection.Output };
+                    _context.Database.ExecuteSqlRaw(
+                        "EXEC Attachments_Manage @InventoryItemId = {0}, @FileName = {1}, @FileType = {2}, @FileData = {3}, @CreatedBy = {4}, @msg = {5} OUTPUT",
+                        itemId, file.FileName, file.ContentType, fileData, CurrentUser, insMsg);
+                    ThrowIfSpError(insMsg, $"Attachment upload ({file.FileName})");
+                }
+
+                transaction.Commit();
+
+                return new
+                {
+                    message = "Item saved successfully with attachments",
+                    id = itemId,
+                    itemName = model.ItemName,
+                    description = model.Description,
+                    purchaseValue = model.PurchaseValue,
+                    purchaseDate = model.PurchaseDate.ToShortDateString(),
+                    rawDate = model.PurchaseDate.ToString("yyyy-MM-dd"),
+                    tax = model.Tax,
+                    total = model.Total,
+                    company = model.Company,
+                    categoryId = model.CategoryId
+                };
+            }
+            catch
+            {
+                transaction.Rollback();   // item insert, attachment deletes, attachment inserts — ALL undone
+                throw;
+            }
+        });
+
+        return Ok(result);
+    }
+    catch (Exception ex)
+    {
+        return StatusCode(500, new { message = "Save failed — no changes were made.", error = ex.Message });
+    }
+}
+
+private static void ThrowIfSpError(SqlParameter msgParam, string context)
+{
+    var msg = msgParam.Value as string;
+    if (!string.IsNullOrEmpty(msg) && msg.StartsWith("Error", StringComparison.OrdinalIgnoreCase))
+        throw new InvalidOperationException($"{context} failed: {msg}");
+}
+
+
+
+
+
 
 
                                                     //Add/GET method  for items through SP calling
@@ -88,7 +201,7 @@ public class InventoryController : Controller //inheriting render, req features 
 //Browser sy fetch req ae having formdata. asp.net us data ka inventoryitem model  ka obj bana dega, name ko name mein, 
 //tax ko tex mein(model binding)
 //ye sb  method chalny sy pehly hi ho jata hai.
-        [HttpPost]
+     /*   [HttpPost]
 
     //FOR INSERTING ITEM INTO DATABASE USING SP CALL
     public IActionResult Save(InventoryItem model)
@@ -189,7 +302,7 @@ public IActionResult Update(int id, InventoryItem model)
         // Agar koi exception aata hai, to 500 Internal Server Error ke saath error message bhej do
         return StatusCode(500, new { message = "An error occurred while updating the item.", error = ex.Message });
     }
-}
+}*/
 
                                                 /// Delete Method
     //URL se id leke Find(id) se row dhoondhi jati hai,

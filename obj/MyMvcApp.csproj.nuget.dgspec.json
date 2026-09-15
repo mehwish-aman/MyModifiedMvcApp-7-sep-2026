@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj": {}
+    "G:\\.NET\\ASP.NET\\IMP_ASP_NET_MVC\\MyTransaction_BlockMvcApp-14-sep-2026\\MyMvcApp.csproj": {}
   },
   "projects": {
-    "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj": {
+    "G:\\.NET\\ASP.NET\\IMP_ASP_NET_MVC\\MyTransaction_BlockMvcApp-14-sep-2026\\MyMvcApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj",
+        "projectUniqueName": "G:\\.NET\\ASP.NET\\IMP_ASP_NET_MVC\\MyTransaction_BlockMvcApp-14-sep-2026\\MyMvcApp.csproj",
         "projectName": "MyMvcApp",
-        "projectPath": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\MyMvcApp.csproj",
+        "projectPath": "G:\\.NET\\ASP.NET\\IMP_ASP_NET_MVC\\MyTransaction_BlockMvcApp-14-sep-2026\\MyMvcApp.csproj",
         "packagesPath": "C:\\Users\\USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\USER\\MyModifiedMvcApp-2SP\\MyAdvancedMvcApp\\obj\\",
+        "outputPath": "G:\\.NET\\ASP.NET\\IMP_ASP_NET_MVC\\MyTransaction_BlockMvcApp-14-sep-2026\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\USER\\AppData\\Roaming\\NuGet\\NuGet.Config"

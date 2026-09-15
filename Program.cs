@@ -16,7 +16,7 @@ app.UseRouting();
 //na hon to default controller par chalay jao]
 app.MapControllerRoute(
     name:"default", 
-    pattern:"{Controller=Account}/{action=Login}/{id?}");
+    pattern:"{Controller=Inventory}/{action=Add}/{id?}");
 //app.MapGet("/", () => "Hi, This is My new App, I am working on it lets make something new!");
 
 app.Run();
